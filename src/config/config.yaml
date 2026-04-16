@@ -1,0 +1,17 @@
+latent_traits:
+  price_sensitivity:
+    type: beta
+    params:
+      alpha: 2
+      beta: 5
+
+  engagement_affinity:
+    type: beta
+    params:
+      alpha: 5
+      beta: 2
+
+  channel_preference:
+    type: categorical
+    values: ["email", "push", "call"]
+    probs: [0.5, 0.3, 0.2]

@@ -82,21 +82,34 @@ def compute_recoverability(df):
     return df
 
 
-def compute_priority(df):
+def compute_priority(df, alpha=0.7, beta=1.5, delta=1.3):
     """
-    Final priority score (safe version)
+    beta → churn importance
+    delta → urgency importance
+    alpha → CLTV influence
     """
 
-    raw_score = (
-        df["cltv"]
-        * df["churn_probability"]
-        * df["urgency"]
-        * df["recoverability"]
+    df = df.copy()
+    df['priority_score'] = (
+        (df['churn_probability'] ** beta) *
+        (df['urgency'] ** delta) *
+        (1 + alpha * df['cltv_normalized'])
     )
 
-    # Safety clamp
-    raw_score = np.maximum(raw_score, 0)
 
-    df["priority_score"] = np.log1p(raw_score)
+    return df
+
+def assign_priority_buckets(df):
+    df = df.copy()
+
+    df['priority_percentile'] = df['priority_score'].rank(pct=True)
+
+    conditions = [
+        df['priority_percentile'] >= 0.9,
+        df['priority_percentile'] >= 0.7,
+    ]
+
+    choices = ['P0', 'P1']
+    df['priority_bucket'] = np.select(conditions, choices, default='P2')
 
     return df

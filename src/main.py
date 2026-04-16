@@ -12,8 +12,9 @@ from src.state_engine.scoring import (
     compute_normalized_volatility,
     compute_recoverability,
     compute_priority,
+    assign_priority_buckets,
 )
-from src.state_engine.user_state_builder import build_user_state_df
+from src.state_engine.user_state_builder import build_user_state_df, enrich_users_with_latent_traits
 
 
 
@@ -50,6 +51,7 @@ def main():
 
         valid_df = compute_recoverability(valid_df)
         valid_df = compute_priority(valid_df)
+        valid_df = assign_priority_buckets(valid_df)
 
         valid_df["status"] = "active"
 
@@ -59,12 +61,14 @@ def main():
     if not invalid_df.empty:
 
         invalid_df["cltv"] = 0
+        invalid_df["cltv_normalized"] = 0
         invalid_df["urgency"] = 0
         invalid_df["priority_score"] = 0
         invalid_df["engagement_normalized"] = 0
         invalid_df["engagement"] = 0
         invalid_df["volatility_normalized"] = 0
         invalid_df["volatility"] = 0
+        invalid_df["priority_bucket"] = "NA"
         invalid_df["recoverability"] = 0
         invalid_df["status"] = "inactive"
 
@@ -77,11 +81,16 @@ def main():
     # FINAL USER STATE
     # =========================
     user_state_df = build_user_state_df(final_df)
+    user_state_df = enrich_users_with_latent_traits(user_state_df)
 
-    # Save Output
+    # print(user_state_df.columns)
+
+
+    # Save Output 
     user_state_df.to_csv("data/processed/user_state_output.csv", index=False, float_format='%.8f')
+    
 
-    print(user_state_df.head())
+    # print(user_state_df.head())
 
 
 if __name__ == "__main__":

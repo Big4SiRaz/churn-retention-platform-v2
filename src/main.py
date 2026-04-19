@@ -14,7 +14,11 @@ from src.state_engine.scoring import (
     compute_priority,
     assign_priority_buckets,
 )
-from src.state_engine.user_state_builder import build_user_state_df, enrich_users_with_latent_traits
+from src.state_engine.user_state_builder import (
+    build_user_state_df,
+    enrich_users_with_latent_traits,
+    apply_channel_preference
+)
 
 
 
@@ -28,7 +32,11 @@ def main():
     # =========================
     # FILTER VALID USERS EARLY
     # =========================
-    valid_mask = (df["remaining_days"] > 0) & (df["remaining_days"] != 999)
+    valid_mask = (
+    (df["remaining_days"] > 0) &
+    (df["remaining_days"] != 999) &
+    (df["is_churn"] != 1)
+)
 
     valid_df = df[valid_mask].copy()
     invalid_df = df[~valid_mask].copy()
@@ -55,6 +63,17 @@ def main():
 
         valid_df["status"] = "active"
 
+        # Core features
+        valid_df = build_user_state_df(valid_df)
+
+        # Latent traits
+        valid_df = enrich_users_with_latent_traits(valid_df)
+
+        # Channel preference
+        valid_df = apply_channel_preference(valid_df)
+
+
+
     # =========================
     # INVALID USERS
     # =========================
@@ -71,26 +90,24 @@ def main():
         invalid_df["priority_bucket"] = "NA"
         invalid_df["recoverability"] = 0
         invalid_df["status"] = "inactive"
+        invalid_df["channel_probs"] = [{}] * len(invalid_df)
+        invalid_df["channel_ev"] = [{}] * len(invalid_df)
+        invalid_df["ranked_channels"] = [[]] * len(invalid_df)
+        invalid_df["best_channel"] = ["NA"] * len(invalid_df)
 
     # =========================
     # MERGE BACK
     # =========================
-    final_df = pd.concat([valid_df, invalid_df], axis=0)
+    final_df = pd.concat([valid_df, invalid_df], axis=0).sort_index()
 
-    # =========================
-    # FINAL USER STATE
-    # =========================
-    user_state_df = build_user_state_df(final_df)
-    user_state_df = enrich_users_with_latent_traits(user_state_df)
-
-    # print(user_state_df.columns)
+    print(final_df.columns)
 
 
     # Save Output 
-    user_state_df.to_csv("data/processed/user_state_output.csv", index=False, float_format='%.8f')
+    final_df.to_csv("data/processed/user_state_output.csv", index=False, float_format='%.8f')
     
 
-    # print(user_state_df.head())
+    # print(final_df.head())
 
 
 if __name__ == "__main__":

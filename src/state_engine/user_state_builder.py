@@ -45,27 +45,34 @@ def build_user_state_df(df):
     return user_state_df
 
 
-def enrich_users_with_latent_traits(users_df):
-    """
-    Adds latent behavioral traits to user dataframe
-    """
+def enrich_users_with_latent_traits(df):
 
     trait_rows = []
 
-    for _, row in users_df.iterrows():
-        user_dict = row.to_dict()
+    users = df.to_dict(orient="records")
 
-        traits = latent_generator.generate_all_traits(user_dict)
+    traits = [
+        latent_generator.generate_all_traits(user)
+        for user in users
+]
 
-        trait_rows.append(traits)
+    traits_df = pd.DataFrame(traits)
 
-    traits_df = pd.DataFrame(trait_rows)
+    return pd.concat([df.reset_index(drop=True), traits_df], axis=1)
 
-    # Combine with original data
-    enriched_df = pd.concat(
-        [users_df.reset_index(drop=True), traits_df],
-        axis=1
-    )
 
-    return enriched_df
+
+def apply_channel_preference(df):
+
+    results = [
+    latent_generator.generate_channel_preference(row)
+    for row in df.to_dict(orient="records")
+    ]
+
+    df["channel_probs"] = [x["channel_probs"] for x in results]
+    df["channel_ev"] = [x["channel_ev"] for x in results]
+    df["ranked_channels"] = [x["ranked_channels"] for x in results]
+    df["best_channel"] = [x["best_channel"] for x in results]
+
+    return df
 

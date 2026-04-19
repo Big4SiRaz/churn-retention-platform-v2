@@ -3,11 +3,38 @@
 import numpy as np
 
 
+def robust_minmax_scale(series, lower_q=0.01, upper_q=0.99):
+    """
+    Scales data to [0,1] while preserving distribution shape
+    and avoiding outliers.
+    """
+
+    lower = series.quantile(lower_q)
+    upper = series.quantile(upper_q)
+
+    scaled = (series - lower) / (upper - lower)
+
+    return scaled.clip(0, 1)
+
+
+# Sigmoid explicitly not required now - so following function not useful.
+def sigmoid_transform(x, k=5, center=0.5):
+    """
+    x: input in [0,1]
+    k: steepness (higher = sharper curve)
+    center: midpoint shift
+    """
+    return 1 / (1 + np.exp(-k * (x - center)))
+
+
+# Normalization function explicitly not required now - so following function not useful.
 def normalize_column(series):
     """
     Min-Max normalization with safety for constant columns.
     Output range: [0, 1]
-    """
+
+    -----> Not using due to outliers and skewness in engagement & volatility. Instead, we'll use a more robust approach in the future (e.g., quantile-based normalization or log transformation).
+    
     min_val = series.min()
     max_val = series.max()
 
@@ -16,28 +43,36 @@ def normalize_column(series):
         return np.ones(len(series)) * 0.5
 
     return (series - min_val) / (max_val - min_val)
+    """
+    series = np.log1p(series)
+    return series.rank(pct=True)
+
 
 
 def compute_normalized_engagement(df):
     """
     Normalize engagement signal.
     Assumes engagement is already numeric or ordinal.
+    
+
+    # Step 1: log transform (handle skew)
+    df["engagement_log"] = np.log1p(df["engagement"])
+
+    # Step 2: percentile normalization
+    df["engagement_pct"] = df["engagement_log"].rank(pct=True)
+
+    # Step 3: sigmoid shaping (push more values upward)
+    df["engagement_normalized"] = sigmoid_transform(
+        df["engagement_pct"],
+        k=5,          # steepness
+        center=0.4    # shift left → more high values
+    )   
+
+    # Not Useful now
+    # df["engagement_normalized"] = normalize_column(df["engagement_numeric"])
     """
 
-    # If engagement is categorical → map first
-    if df["engagement"].dtype == "object":
-        engagement_map = {
-            "Very Low": 1,
-            "Low": 2,
-            "Medium": 3,
-            "High": 4,
-            "Very High": 5
-        }
-        df["engagement_numeric"] = df["engagement"].map(engagement_map).fillna(3)
-    else:
-        df["engagement_numeric"] = df["engagement"]
-
-    df["engagement_normalized"] = normalize_column(df["engagement_numeric"])
+    df["engagement_normalized"] = robust_minmax_scale(df["engagement"])
 
     return df
 
@@ -45,21 +80,26 @@ def compute_normalized_engagement(df):
 def compute_normalized_volatility(df):
     """
     Normalize volatility signal.
+    
+    
+    # Step 1: log transform
+    df["volatility_log"] = np.log1p(df["volatility"])
+
+    # Step 2: percentile
+    df["volatility_pct"] = df["volatility_log"].rank(pct=True)
+
+    # Step 3: sigmoid shaping (push values downward)
+    df["volatility_normalized"] = sigmoid_transform(
+        df["volatility_pct"],
+        k=5,
+        center=0.6    # shift right → more low values
+    )
+
+    # Not Useful now
+    # df["volatility_normalized"] = normalize_column(df["volatility_numeric"])
     """
 
-    if df["volatility"].dtype == "object":
-        volatility_map = {
-            "Ultra Low": 1,
-            "Low": 2,
-            "Medium": 3,
-            "High": 4,
-            "Very High": 5
-        }
-        df["volatility_numeric"] = df["volatility"].map(volatility_map).fillna(3)
-    else:
-        df["volatility_numeric"] = df["volatility"]
-
-    df["volatility_normalized"] = normalize_column(df["volatility_numeric"])
+    df["volatility_normalized"] = robust_minmax_scale(df["volatility"])
 
     return df
 

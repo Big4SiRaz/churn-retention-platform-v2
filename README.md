@@ -13,8 +13,68 @@ Unlike static rule-based CRM systems, this engine dynamically learns:
 It combines behavioral modeling, economic trade-offs, and decision optimization—mirroring real-world growth/product systems.
 
 
+## Foundation (v1 → v2 Evolution)
 
-## Problem Statement
+### v1 Summary
+
+In v1, we built the **core customer intelligence layer** focusing on identifying *who matters and why*.
+
+Key capabilities:
+- **CLTV Modeling** → Estimated long-term customer value  
+- **Engagement Scoring** → Measured interaction/activity levels  
+- **Urgency / Churn Risk Detection** → Identified customers needing intervention using ML
+
+Output:
+A **prioritized customer state framework** enabling ranking of users based on value and risk.
+
+
+### 🔹 What v1 Achieved
+
+- Shifted from raw data → **decision-ready customer signals**
+- Enabled **value-based prioritization (CLTV-first thinking)**
+- Created a **scalable feature layer** usable for downstream decisioning
+- Established foundation for **intervention targeting**
+
+
+### Limitations in v1
+
+While v1 identified *who to act on*, it lacked:
+
+- No concept of **action cost vs benefit**
+- No **decision-making framework**
+- No **budget constraints**
+- No modeling of **customer response behavior**
+
+Result:
+System answered **“who is important”**, but not  
+**“what should we do, and is it worth it?”**
+
+
+### How v2 Builds on v1
+
+v2 transforms the system from **analytics → decision intelligence**
+
+| v1 Capability | v2 Enhancement |
+|--------------|---------------|
+| Customer scoring | Action optimization |
+| CLTV prioritization | CLTV-weighted decisioning |
+| Static signals | Dynamic behavioral modeling |
+| No cost awareness | Cost vs uplift optimization |
+| No execution layer | Full intervention engine |
+
+Key Shift:
+> From **“identify high-value customers”**  
+> → **“optimally invest in customers under constraints”**
+
+
+### v1 Reference
+
+For detailed implementation and approach:  
+[[Project Link](https://github.com/Big4SiRaz/churn-retention-platform)]
+
+
+
+## Problem Statement for v2
 
 A more traditional engagement systems suffers from:
 - Uniform treatment of customers
